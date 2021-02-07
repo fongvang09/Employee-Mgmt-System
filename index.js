@@ -28,7 +28,21 @@ var connection = mysql.createConnection({
 // connection.connect(function (err) {
 //   if (err) throw err;
 //   console.log("connected as id " + connection.threadId + "\n");
+//   mainMenu();
 // });
+
+// function mainMenu() {
+//   queryURL = `SELECT song FROM top5000 WHERE artist = ''`;
+//   queryURL = 'SELECT artist, COUNT(song) AS songCount FROM top5000 GROUP by artist HAVING songCount > 1 ORDER by soundCount DESC';
+//   queryURL = `SELECT song, position FROM top5000 WHERE (position BETWEEN 100 and 200);`;
+
+//   console.log(queryURL);
+//   connection.query(queryURL, function(err, res) {
+//       if (err) throw err;
+//       console.table(res);
+//       Exit();
+//   });
+// }
 
 init();
 
@@ -53,6 +67,9 @@ async function init() {
     case "Update Employee Manager":
       editManager();
       break;
+    case "View Info":
+      viewInfo();
+      break;
     default:
       break;
   }
@@ -67,7 +84,7 @@ async function viewDepartments() {
     "choices": ["Return"]
   });
   if (department === "Return") {
-    init() && console.table;
+    init()
   } else {
     "Error"
   }
@@ -87,11 +104,11 @@ async function viewManager() {
 
 // "Add Employee"
 async function editEmployee() {
-  const employee = await inquirer.prompt({
+  const {employee} = await inquirer.prompt({
     "type": "list",
     "message": "Please select the employee that you would like to add:",
     "name": "employee",
-    "choices": ["Add an employee", "Exit"]
+    "choices": ["Add an employee", "Return"]
   });
   if (employee === "Add an employee") {
     addEmployee();
@@ -123,7 +140,20 @@ async function addEmployee() {
       "name": "managerID"
     }
   ]);
-
+  const query = await connection.query(
+    "INSERT INTO employee SET ?",
+    {
+      first_name: add.firstName,
+      last_name: add.lastName,
+      role_id: add.roleID,
+      manager_id: add.managerID
+    },
+    function (err, res) {
+      // if (err) throw err;
+      console.log(res.affectedRows + "Employee Added\n");
+      init();
+    }
+  )
 };
 
 // "Remove Employee"
@@ -140,6 +170,24 @@ async function removeEmployee() {
     init();
   }
 };
+
+async function removeEmployee() {
+  connection.query(
+    "SELECT first_name AS firstName, last_name AS lastName FROM employee",
+    async function (err, employees) {
+      const data = await inquirer.prompt([
+        {
+          "type": "list",
+          "message": "Which employee do you want to remove?",
+          "name": "employees",
+          "choices": employees.map((employee) => ({
+            name: employee.firstName + " " + employee.lastName
+          })
+        )}
+      ])
+    }
+  )
+}
 
 // "Update Employee Role"
 async function editRole() {
@@ -175,3 +223,28 @@ async function editManager() {
   }
 };
 
+// function Exit() {
+//   connection.end();
+// }
+
+async function viewInfo() {
+  const {viewTable} = await inquirer.prompt({
+    "type": "list",
+    "message": "Select one of the following:",
+    "name": "viewTable",
+    "choices": ["Employees", "Departments", "Roles"]
+  });
+  if (viewTable === "Employees") {
+    query = `SELECT employee.first_name, employee.last_name AS department FROM (
+      (employee INNER JOIN role ON employee.role_id)
+      INNER JOIN department ON role.department_id = department.id)
+      ORDER by department`;
+  } else if (viewTable === "Departments") {
+    query = `SELECT name FROM department`
+  } else if (viewTable === "Roles") {
+    query = `SELECT role.title, role.department_id AS id, department.dept AS department FROM role INNER JOIN department ON role.department_id = department.id ORDER BY title ASC`;
+  }
+  const data = await connection.query(query);
+  console.table(data);
+  init();
+}
