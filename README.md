@@ -8,4 +8,4 @@ This assignment is to architect and build a solution for managing a company's em
 
 Screencastify: https://drive.google.com/file/d/1sX7SJK-RNFHCLDEHkFMlDIb7S0DZHbrT/view
 
-GitHub: github.com/fongvang09
+GitHub: https://github.com/fongvang09/Employee-Mgmt-System
