@@ -8,11 +8,11 @@ const questions = ([
     "choices": [
       "View All Employees By Department",
       "View All Employees By Manager",
-      "Add Employee",
-      "Remove Employee",
+      "Edit Employee",
       "Update Employee Role",
       "Update Employee Manager",
-      "View All Roles"
+      "View All Roles",
+      "Exit"
     ]
   }
 ]);
@@ -27,6 +27,7 @@ var connection = mysql.createConnection({
 
 connection.connect(function (err) {
   // if (err) throw err;
+  console.log("DB Connected...");
   mainMenu();
 });
 
@@ -39,12 +40,12 @@ async function mainMenu() {
     case "View All Employees By Manager":
       viewManager();
       break;
-    case "Add Employee":
+    case "Edit Employee":
       editEmployee();
       break;
-    case "Remove Employee":
-      removeEmployee();
-      break;
+    // case "Remove Employee":
+    //   removeEmployee();
+    //   break;
     case "Update Employee Role":
       editRole();
       break;
@@ -53,6 +54,9 @@ async function mainMenu() {
       break;
     case "View All Roles":
       viewAll();
+      break;
+    case "Exit":
+      exit();
       break;
     default:
       break;
@@ -65,12 +69,26 @@ async function viewDepartments() {
     "type": "list",
     "message": "Select what you would like to do:",
     "name": "department",
-    "choices": ["Return"]
+    "choices": ["View", "Return"]
   });
-  if (department === "Return") {
+  console.log(department);
+  if (department.department === "View") {
+    // mainMenu()
+    console.log("Making Query");
+    // Query our Database for data (Async Call)
+    connection.query("SELECT * FROM employee");
+ /*   connection.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, role.department_id, department.name FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id;", (err, res) => {
+      if(err) {
+        console.log(err);
+      }
+      console.log(res);
+    });
+  */
+  } else if (department.department === "Return") {
     mainMenu()
+    console.log("Return...")
   } else {
-    "Error"
+    console.log("Error");
   }
 };
 
@@ -82,32 +100,38 @@ async function viewManager() {
     "name": "manager",
     "choices": ["View", "Return"]
   });
-  if (manager === "View") {
+  if (manager.manager === "View") {
     var query = "SELECT first_name, last_name, role_id, manager_id FROM employeeDB WHERE ?";
     console.log(add);
-    app.get('/', function (err, res) {
-      if (err) throw err;
-      // console.table(res);
-      console.log(res.affectedRows + "Employee Added\n");
-      mainMenu();
-    });
-  }
+    app.get('/', (err, res) => {
+        if (err)
+          throw err;
+        // console.table(res);
+        console.log(res.affectedRows + "Employee Added\n");
+        mainMenu();
+      });
+  } else if (manager.manager === "Return") {
+    mainMenu()
 };
+}
 
 // "Add Employee"
 async function editEmployee() {
-  const { employee } = await inquirer.prompt({
+  const {employee} = await inquirer.prompt({
     "type": "list",
     "message": "Please select the employee that you would like to add:",
     "name": "employee",
-    "choices": ["Add an employee", "Return"]
+    "choices": ["Add an employee", "Remove an employee", "Return"]
   });
   if (employee === "Add an employee") {
     addEmployee();
-  } else {
-    mainMenu();
+  if (employee === "Remove an employee") {
+    removeEmployee();
+  } else if ({employee}.employee === "Return") {
+    mainMenu()
   }
 };
+}
 
 async function addEmployee() {
   const add = await inquirer.prompt([
@@ -125,23 +149,23 @@ async function addEmployee() {
       "type": "input",
       "message": "What is the employee's role ID?",
       "name": "roleID",
-      validate: function (value) {
+      validate: (value) => {
         if (isNaN(value) === false) {
           return true;
         }
-        console.log(" (Please enter a valid number)")
+        console.log(" (Please enter a valid number)");
         return false;
       }
     },
     {
       "type": "input",
-      "message": "what is the manager's ID?",
+      "message": "What is the manager's ID?",
       "name": "managerID",
-      validate: function (value) {
+      validate: (value) => {
         if (isNaN(value) === false) {
           return true;
         }
-        console.log(" (Please enter a valid number)")
+        console.log(" (Please enter a valid number)");
         return false;
       }
     }
@@ -156,7 +180,7 @@ async function addEmployee() {
   //     mainMenu();
   //   });
   // });
-  const query = await connection.query(
+  const query = connection.query(
     "INSERT INTO employee SET ?",
     {
       first_name: add.firstName,
@@ -165,12 +189,13 @@ async function addEmployee() {
       manager_id: add.managerID
     },
     console.log(add));
-  app.get('/', function (err, res) {
-    if (err) throw err;
-    // console.table(res);
-    console.log(res.affectedRows + "Employee Added\n");
-    mainMenu();
-  })
+  (err, res) => {
+      if (err)
+        throw err;
+      // console.table(res);
+      console.log(`${res.affectedRows}Employee Added`);
+      mainMenu();
+    };
 };
 
 // "Remove Employee"
@@ -191,21 +216,29 @@ async function removeEmployee() {
 async function remEmployee() {
   connection.query(
     "SELECT first_name AS firstName, last_name AS lastName FROM employee",
-    async function (err, employees) {
+    async (err, employees) => {
       const data = await inquirer.prompt([
         {
           "type": "list",
           "message": "Which employee do you want to remove?",
           "name": "employees",
           "choices": employees.map((employee) => ({
-            name: employee.firstName + " " + employee.lastName
+            name: `${employee.firstName} ${employee.lastName}`
           })
-          )
-        }
+          ),
+        },
       ]);
+      console.log(data);
+      const firstAndLast = data.employees.split(" ");
+      console.log(firstAndLast[1]);
+      connection.query(
+        "DELETE FROM employee WHERE first_name = ? AND last_name = ?",
+        [firstAndLast[0], firstAndLast[1]]
+      );
+      mainMenu();
     }
-  )
-};
+  );
+}
 
 // "Update Employee Role"
 async function editRole() {
@@ -231,7 +264,7 @@ async function addRole() {
     "name": "role",
     "choices": ["Sales Lead", "Salesperson", "Lead Engineer", "Software Engineer", "Accountant", "Legal Team Lead", "Lawyer"]
   });
-  const query = await connection.query(
+  const query = connection.query(
     "INSERT INTO role SET ?",
     {
       title: role.title,
@@ -239,12 +272,13 @@ async function addRole() {
       department_id: role.department_id,
     },
     console.log(add));
-  app.get('/', function (err, res) {
-    if (err) throw err;
-    // console.table(res);
-    console.log(res.affectedRows + "Role Added\n");
-    mainMenu();
-  })
+  app.get('/', (err, res) => {
+      if (err)
+        throw err;
+      // console.table(res);
+      console.log(res.affectedRows + "Role Added\n");
+      mainMenu();
+    })
 };
 
 async function removeRole() {
@@ -254,7 +288,7 @@ async function removeRole() {
     "name": "removeRole",
     "choices": ["Sales Lead", "Salesperson", "Lead Engineer", "Software Engineer", "Accountant", "Legal Team Lead", "Lawyer"]
   });
-  const query = await connection.query(
+  const query = connection.query(
     "INSERT INTO role SET ?",
     {
       title: role.title,
@@ -262,12 +296,14 @@ async function removeRole() {
       department_id: role.department_id,
     },
     console.log(add));
-  app.get('/', function (err, res) {
-    if (err) throw err;
-    // console.table(res);
-    console.log(res.affectedRows + "Role Removed\n");
-    mainMenu();
-  })
+  app.get('/', (err, res) => {
+      if (err)
+        throw err;
+      // console.table(res);
+      console.log(`${res.affectedRows}Role Removed
+`);
+      mainMenu();
+    })
 };
 
 // "Update Employee Manager"
@@ -305,7 +341,11 @@ async function viewAll() {
   } else (viewTable === "Return"); {
     mainMenu();
   }
-  const data = await connection.query(query);
+  const data = connection.query(query);
   console.table(data);
   mainMenu();
 };
+
+// async function exit() {
+//   const 
+// }

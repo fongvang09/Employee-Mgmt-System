@@ -27,3 +27,8 @@ INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ("Harry
 SELECT * FROM department;
 SELECT * FROM role;
 SELECT * FROM employee;
+# SELECT (fields) FROM (table)
+SELECT employee.id, employee.first_name, employee.last_name, role.title, role.department_id, department.name FROM employee
+LEFT JOIN role ON employee.role_id = role.id
+LEFT JOIN department ON role.department_id = department.id;
+
