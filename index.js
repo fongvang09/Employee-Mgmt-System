@@ -1,5 +1,6 @@
 const mysql = require("mysql");
 const inquirer = require("inquirer");
+require("console.table");
 const questions = ([
   {
     "type": "list",
@@ -19,7 +20,7 @@ const questions = ([
 
 var connection = mysql.createConnection({
   host: "localHost",
-  port: "3307",
+  port: "3306",
   user: "root",
   password: "root",
   database: "employeeDB"
@@ -27,7 +28,6 @@ var connection = mysql.createConnection({
 
 connection.connect(function (err) {
   // if (err) throw err;
-  console.log("DB Connected...");
   mainMenu();
 });
 
@@ -35,7 +35,7 @@ async function mainMenu() {
   const { action } = await inquirer.prompt(questions);
   switch (action) {
     case "View All Employees By Department":
-      viewDepartments();
+      viewEmployees();
       break;
     case "View All Employees By Manager":
       viewManager();
@@ -43,9 +43,6 @@ async function mainMenu() {
     case "Edit Employee":
       editEmployee();
       break;
-    // case "Remove Employee":
-    //   removeEmployee();
-    //   break;
     case "Update Employee Role":
       editRole();
       break;
@@ -59,38 +56,23 @@ async function mainMenu() {
       exit();
       break;
     default:
-      break;
+      return quit();
   }
 };
 
 // "View All Employees By Department"
-async function viewDepartments() {
-  const department = await inquirer.prompt({
-    "type": "list",
-    "message": "Select what you would like to do:",
-    "name": "department",
-    "choices": ["View", "Return"]
-  });
-  console.log(department);
-  if (department.department === "View") {
-    // mainMenu()
-    console.log("Making Query");
-    // Query our Database for data (Async Call)
-    connection.query("SELECT * FROM employee");
- /*   connection.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, role.department_id, department.name FROM employee LEFT JOIN role ON employee.role_id = role.id LEFT JOIN department ON role.department_id = department.id;", (err, res) => {
-      if(err) {
-        console.log(err);
-      }
-      console.log(res);
-    });
-  */
-  } else if (department.department === "Return") {
+function viewEmployees() {
+
+  // Query our Database for data (Async Call)
+  connection.query("SELECT * FROM employee", function (error, res) {
+    if (error) throw error;
+   // console.log(res);
+    console.table(res);
     mainMenu()
-    console.log("Return...")
-  } else {
-    console.log("Error");
-  }
-};
+  });
+
+  // inquirer.prompt({ }).then(res => console.log(res) ).catch();
+}
 
 // "View All Employees By Manager"
 async function viewManager() {
@@ -104,20 +86,20 @@ async function viewManager() {
     var query = "SELECT first_name, last_name, role_id, manager_id FROM employeeDB WHERE ?";
     console.log(add);
     app.get('/', (err, res) => {
-        if (err)
-          throw err;
-        // console.table(res);
-        console.log(res.affectedRows + "Employee Added\n");
-        mainMenu();
-      });
+      if (err)
+        throw err;
+      // console.table(res);
+      console.log(res.affectedRows + "Employee Added\n");
+      mainMenu();
+    });
   } else if (manager.manager === "Return") {
     mainMenu()
-};
+  };
 }
 
 // "Add Employee"
 async function editEmployee() {
-  const {employee} = await inquirer.prompt({
+  const { employee } = await inquirer.prompt({
     "type": "list",
     "message": "Please select the employee that you would like to add:",
     "name": "employee",
@@ -125,12 +107,12 @@ async function editEmployee() {
   });
   if (employee === "Add an employee") {
     addEmployee();
-  if (employee === "Remove an employee") {
-    removeEmployee();
-  } else if ({employee}.employee === "Return") {
-    mainMenu()
-  }
-};
+    if (employee === "Remove an employee") {
+      removeEmployee();
+    } else if (employee.employee === "Return") {
+      mainMenu()
+    }
+  };
 }
 
 async function addEmployee() {
@@ -169,17 +151,16 @@ async function addEmployee() {
         return false;
       }
     }
-  ])
-  // .then(function (answer) {
-  //   var query = "INSERT INTO id, first_name, last_name, role_id, manager_id FROM employeeDB WHERE ?";
-  //   connection.query(query, { name: answer.firstName }, function (err, res) {
-  //     for (var i = 0; i < res.length; i++) {
-  //       console.table("ID: " + res[i].id + " first_name: " + res[i].firstName + " last_name: " + res[i].lastName + " title: " + res[i].title);
-  //     }
-  //     console.log(answer);
-  //     mainMenu();
-  //   });
-  // });
+  ]);
+  switch (add.managerID) {
+    case true:
+      add.managerID = 1;
+      break;
+    case false:
+      add.managerID = null;
+      break;
+  }
+  console.log(add)
   const query = connection.query(
     "INSERT INTO employee SET ?",
     {
@@ -187,15 +168,15 @@ async function addEmployee() {
       last_name: add.lastName,
       role_id: add.roleID,
       manager_id: add.managerID
-    },
-    console.log(add));
-  (err, res) => {
+    }, (err, res) => {
       if (err)
         throw err;
       // console.table(res);
       console.log(`${res.affectedRows}Employee Added`);
       mainMenu();
-    };
+    }
+  );
+  console.table(add);
 };
 
 // "Remove Employee"
@@ -273,12 +254,12 @@ async function addRole() {
     },
     console.log(add));
   app.get('/', (err, res) => {
-      if (err)
-        throw err;
-      // console.table(res);
-      console.log(res.affectedRows + "Role Added\n");
-      mainMenu();
-    })
+    if (err)
+      throw err;
+    // console.table(res);
+    console.log(res.affectedRows + "Role Added\n");
+    mainMenu();
+  })
 };
 
 async function removeRole() {
@@ -297,13 +278,12 @@ async function removeRole() {
     },
     console.log(add));
   app.get('/', (err, res) => {
-      if (err)
-        throw err;
-      // console.table(res);
-      console.log(`${res.affectedRows}Role Removed
-`);
-      mainMenu();
-    })
+    if (err)
+      throw err;
+    // console.table(res);
+    console.log(`${res.affectedRows}Role Removed`);
+    mainMenu();
+  })
 };
 
 // "Update Employee Manager"
@@ -346,6 +326,6 @@ async function viewAll() {
   mainMenu();
 };
 
-// async function exit() {
-//   const 
-// }
+function exit() {
+  process.exit();
+}
