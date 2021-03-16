@@ -8,10 +8,10 @@ const questions = ([
     "name": "action",
     "choices": [
       "View All Employees By Department",
-      "View All Employees By Manager",
+      // "View All Employees By Manager",
       "Edit Employee",
       "Update Employee Role",
-      "Update Employee Manager",
+      // "Update Employee Manager",
       "View All Roles",
       "Exit"
     ]
@@ -37,18 +37,18 @@ async function mainMenu() {
     case "View All Employees By Department":
       viewEmployees();
       break;
-    case "View All Employees By Manager":
-      viewManager();
-      break;
+    // case "View All Employees By Manager":
+    //   viewManager();
+    //   break;
     case "Edit Employee":
       editEmployee();
       break;
     case "Update Employee Role":
       editRole();
       break;
-    case "Update Employee Manager":
-      editManager();
-      break;
+    // case "Update Employee Manager":
+    //   editManager();
+    //   break;
     case "View All Roles":
       viewAll();
       break;
@@ -62,39 +62,13 @@ async function mainMenu() {
 
 // "View All Employees By Department"
 function viewEmployees() {
-
-  // Query our Database for data (Async Call)
   connection.query("SELECT * FROM employee", function (error, res) {
     if (error) throw error;
    // console.log(res);
     console.table(res);
     mainMenu()
   });
-
   // inquirer.prompt({ }).then(res => console.log(res) ).catch();
-}
-
-// "View All Employees By Manager"
-async function viewManager() {
-  const manager = await inquirer.prompt({
-    "type": "list",
-    "message": "Select what you would like to do:",
-    "name": "manager",
-    "choices": ["View", "Return"]
-  });
-  if (manager.manager === "View") {
-    var query = "SELECT first_name, last_name, role_id, manager_id FROM employeeDB WHERE ?";
-    console.log(add);
-    app.get('/', (err, res) => {
-      if (err)
-        throw err;
-      // console.table(res);
-      console.log(res.affectedRows + "Employee Added\n");
-      mainMenu();
-    });
-  } else if (manager.manager === "Return") {
-    mainMenu()
-  };
 }
 
 // "Add Employee"
@@ -287,44 +261,54 @@ async function removeRole() {
 };
 
 // "Update Employee Manager"
-async function editManager() {
-  const manager = await inquirer.prompt({
-    "type": "list",
-    "message": "What would you like to do?",
-    "name": "manager",
-    "choices": ["Add a manager", "Remove a manager", "Return"]
-  });
-  if (manager === "Add a manager") {
-    addManager();
-  } else if (manager === "Remove a manager") {
-    removeManager();
-  } else {
-    mainMenu();
-  }
-};
+// async function editManager() {
+//   const manager = await inquirer.prompt({
+//     "type": "list",
+//     "message": "What would you like to do?",
+//     "name": "manager",
+//     "choices": ["Add a manager", "Remove a manager", "Return"]
+//   });
+//   if (manager === "Add a manager") {
+//     addManager();
+//   } else if (manager === "Remove a manager") {
+//     removeManager();
+//   } else {
+//     mainMenu();
+//   }
+// };
 
 
 // "View All Roles"
-async function viewAll() {
-  const { viewTable } = await inquirer.prompt({
-    "type": "list",
-    "message": "Select one of the following:",
-    "name": "viewTable",
-    "choices": ["Employees", "Departments", "Roles", "Return"]
+function viewAll() {
+  connection.query("SELECT * FROM employee INNER JOIN role on role.id = employee.role_id INNER JOIN department on department.id = role.department_id", function (error, res) {
+    if (error) throw error;
+   // console.log(res);
+    console.table(res);
+    mainMenu()
   });
-  if (viewTable === "Employees") {
-    var query = `SELECT first_name, last_name, role_id, manager_id FROM employee WHERE ?`;
-  } else if (viewTable === "Departments") {
-    query = `SELECT name FROM department WHERE ?`;
-  } else if (viewTable === "Roles") {
-    query = `SELECT title, salary, department_id FROM role WHERE ?`;
-  } else (viewTable === "Return"); {
-    mainMenu();
-  }
-  const data = connection.query(query);
-  console.table(data);
-  mainMenu();
-};
+  // inquirer.prompt({ }).then(res => console.log(res) ).catch();
+}
+
+// async function viewAll() {
+//   const { viewTable } = await inquirer.prompt({
+//     "type": "list",
+//     "message": "Select one of the following:",
+//     "name": "viewTable",
+//     "choices": ["Employees", "Departments", "Roles", "Return"]
+//   });
+//   if (viewTable === "Employees") {
+//     var query = `SELECT first_name, last_name, role_id, manager_id FROM employee WHERE ?`;
+//   } else if (viewTable === "Departments") {
+//     query = `SELECT name FROM department WHERE ?`;
+//   } else if (viewTable === "Roles") {
+//     query = `SELECT title, salary, department_id FROM role WHERE ?`;
+//   } else (viewTable === "Return"); {
+//     mainMenu();
+//   }
+//   const data = connection.query(query);
+//   console.table(data);
+//   mainMenu();
+// };
 
 function exit() {
   process.exit();
